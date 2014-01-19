@@ -1,0 +1,5 @@
+project/
+target/
+src/Main.scala
+
+*.class
