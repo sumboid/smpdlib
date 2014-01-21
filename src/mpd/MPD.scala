@@ -13,27 +13,32 @@ class MPD(host: String, port: Int) {
 
   connect
 
-  def get(q: String) {
+  def get(q: String): Unit = {
     output.println(q)
     output.flush
-    response.foreach(println)
+
+    response match {
+      case Nil => connect; get(q)
+      case x => x.foreach(println)
+    }
   }
 
   def response: List[String] = {
     var lines = List[String]()
     while(true) {
-      val line = input.readLine
-      if(line == null) { println("Error while reading from socket"); return Nil }
+
+      var line: String = input.readLine
+      if(line == null) { return Nil }
       line.split(" ")(0) match {
         case "OK"  => return lines
-        case "ACK" => return Nil
+        case "ACK" => return "Error" :: Nil
         case _ => lines ::= line
       }
     }
     lines
   }
 
-  def connect {
+  def connect = {
     if(socket != null) {
       socket.close
       input.close
@@ -47,7 +52,7 @@ class MPD(host: String, port: Int) {
     } catch {
       case e: UnknownHostException => println("Unknown host")
       case e: IOException => println("No I/O")
-      case _: Throwable => println("Something wrong FUCK")
+      case _: Throwable => println("Something wrong")
     }
 
     { response }
