@@ -37,7 +37,7 @@ object Track {
         case "Title" => title = value
         case "Album" => album = value
         case "Time" => time = value.toInt
-        case "File" => file = value
+        case "file" => file = value
         case _ => {}
       }
     }
