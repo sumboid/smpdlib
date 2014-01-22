@@ -4,6 +4,11 @@ import java.net._
 import java.io._
 import scala.io._
 
+trait LowLevelResponse[+A]
+case class Ok[+A](x: A) extends LowLevelResponse[A]
+case object Ack extends LowLevelResponse[Nothing]
+case object ConnectionError extends LowLevelResponse[Nothing]
+
 class MPD(host: String, port: Int) {
   val _host = host
   val _port = port
@@ -13,29 +18,30 @@ class MPD(host: String, port: Int) {
 
   connect
 
-  def get(q: String): Unit = {
-    output.println(q)
+  def get(q: Command): Response = {
+    output.println(q.raw)
     output.flush
 
     response match {
-      case Nil => connect; get(q)
-      case x => x.foreach(println)
+      case ConnectionError => connect; get(q)
+      case Ack => ErrorResponse()
+      case Ok(x) => q.response.parse(x)
     }
   }
 
-  def response: List[String] = {
+  def response: LowLevelResponse[List[String]] = {
     var lines = List[String]()
     while(true) {
 
       var line: String = input.readLine
-      if(line == null) { return Nil }
+      if(line == null) { return ConnectionError }
       line.split(" ")(0) match {
-        case "OK"  => return lines
-        case "ACK" => return "Error" :: Nil
+        case "OK"  => return Ok(lines)
+        case "ACK" => return Ack
         case _ => lines ::= line
       }
     }
-    lines
+    Ok(lines)
   }
 
   def connect = {
