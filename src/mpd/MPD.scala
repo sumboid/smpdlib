@@ -1,4 +1,4 @@
-package mpd
+package smpd
 
 import java.net._
 import java.io._
@@ -18,18 +18,18 @@ class MPD(host: String, port: Int) {
 
   connect
 
-  def get(q: Command): Response = {
+  def send(q: Command): Unit = {
     output.println(q.raw)
     output.flush
-
-    response match {
-      case ConnectionError => connect; get(q)
-      case Ack => ErrorResponse()
-      case Ok(x) => q.response.parse(x)
-    }
   }
 
-  def response: LowLevelResponse[List[String]] = {
+  def response(q: Command) = _response match {
+      case ConnectionError => connect; send(q)
+      case Ack => ErrorResponse()
+      case Ok(x) => q.response.parse(x)
+  }
+
+  def _response: LowLevelResponse[List[String]] = {
     var lines = List[String]()
     while(true) {
 
@@ -61,7 +61,7 @@ class MPD(host: String, port: Int) {
       case _: Throwable => println("Something wrong")
     }
 
-    { response }
+    { _response }
   }
 }
 

@@ -1,4 +1,5 @@
-package mpd
+package smpd
+import sub._
 
 case class Idle(subsystems: List[Subsystem] = All() :: Nil) extends Command {
   val command = "idle"

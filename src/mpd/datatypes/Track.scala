@@ -1,4 +1,4 @@
-package mpd
+package smpd
 
 case class Track(id:     Int,
                  pos:    Int,

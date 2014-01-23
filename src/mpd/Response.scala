@@ -1,4 +1,4 @@
-package mpd
+package smpd
 
 trait Response {
   def parse(raw: List[String]): Response

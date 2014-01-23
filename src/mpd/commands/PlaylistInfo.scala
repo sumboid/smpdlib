@@ -1,4 +1,4 @@
-package mpd
+package smpd
 
 class PlaylistInfo extends Command {
   val command = "playlistinfo"
@@ -19,7 +19,7 @@ case class PlaylistInfoResponse(playlist: List[Track] = Nil) extends Response {
   }
 
   def parse(raw: List[String]) = {
-    val rawTracks = splitTracks(raw)
+    val rawTracks = splitTracks(raw).reverse
     PlaylistInfoResponse(rawTracks map (Track.create(_)))
   }
 }

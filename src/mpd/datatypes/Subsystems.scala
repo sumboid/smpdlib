@@ -1,5 +1,5 @@
-package mpd
-
+package smpd
+package sub
 abstract class Subsystem(name: String = "")
 case class Database extends Subsystem("database")
 case class Update extends Subsystem("update")

@@ -1,4 +1,4 @@
-package mpd
+package smpd
 
 case class CurrentSong extends Command {
   val raw = "currentsong"
