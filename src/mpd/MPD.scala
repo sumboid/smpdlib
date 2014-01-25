@@ -23,8 +23,8 @@ class MPD(host: String, port: Int) {
     output.flush
   }
 
-  def response(q: Command) = _response match {
-      case ConnectionError => connect; send(q)
+  def response(q: Command): Response = _response match {
+      case ConnectionError => connect; send(q); response(q)
       case Ack => ErrorResponse()
       case Ok(x) => q.response.parse(x)
   }
