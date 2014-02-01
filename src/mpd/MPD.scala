@@ -9,8 +9,8 @@ package mpdlow {
   trait LowLevelResponse[+A]
 
   case class Ok[+A](x: A) extends LowLevelResponse[A]
-  case class Ack[+A] extends LowLevelResponse[A]
-  case class MPDVersion[+A] extends LowLevelResponse[A]
+  case class Ack[+A](x: A) extends LowLevelResponse[A]
+  case class MPDVersion[+A](x: A) extends LowLevelResponse[A]
 
   case object ExternalError extends LowLevelResponse[Nothing]
   case object InternalError extends LowLevelResponse[Nothing]
@@ -23,38 +23,28 @@ package mpdlow {
     var input:  BufferedReader = null
     var output: PrintStream = null
 
-    var queue = 0
-
     def send(q: String) = {
       output.println(q)
       output.flush
-      queue += 1
     }
 
     def recv = {
-      if (queue == 0) ExternalError
+      var lines = List[String]()
+      while(true) {
+        var line: String = input.readLine
+        if(line == null) { return ConnectionError }
 
-      def _recv = {
-        var lines = List[String]()
-        while(true) {
-          var line: String = input.readLine
-          if(line == null) { return ConnectionError }
-
-          line.split(" ", 2) match {
-            case Array("OK") => return Ok(lines)
-            case Array("OK", message) => message.split(" ", 2) match {
-              case Array("MPD", vesrion) => return MPDVersion(version)
-              case _ => return Ok(lines)
-            }
-            case Array("ACK", message) => return Ack(message)
-            case _ => lines ::= line
+        line.split(" ", 2) match {
+          case Array("OK") => return Ok(lines)
+          case Array("OK", message) => message.split(" ", 2) match {
+            case Array("MPD", vesrion) => return MPDVersion(version)
+            case _ => return Ok(lines)
           }
+          case Array("ACK", message) => return Ack(message)
+          case _ => lines ::= line
         }
-        Ok(lines)
       }
-
-      queue -= 1
-      _recv
+      Ok(lines)
     }
 
     def disconnect = if(socket != null) {
@@ -80,7 +70,7 @@ package mpdlow {
 
       recv match {
         case x: MPDVersion => x
-        case _ => InternalError
+        case _             => InternalError
       }
     }
 
@@ -90,33 +80,63 @@ package mpdlow {
 
 import mpdlow._
 
-class MPD(host: String, port: Int) {
-  val socket = MPDSocket(host, port)
-  var queue: List[Response] = Nil
+case class MPD(host: String, port: Int) {
+  private[this] val socket = MPDSocket(host, port)
+  var version = ""
 
   def send(q: Command) = {
     checkConnectionState
     socket.send(q.raw)
-    queue :+ q.response
   }
 
-  def checkConnectionState = {
-    socket.send("ping")
-    socket.recv match {
-      case ConnectionError => ConnectionError
-      case _ => Ok
-    }
+  def response(q: Command) = socket.recv match {
+    case Ok(x) => q.response.parse(x)
+    case Ack(x) => ErrorResponse(x)
+    case ConnectionError => ConnectionErrorResponse()
+    case _ => UnknownResponse()
   }
 
-  def response = {
-    if (queue == Nil) ExternalError
-
-    _response match {
-
-    }
+  def connect = socket.connect match {
+    case MPDVersion(x) => version = x
+    case _ => ConnectionError
   }
+
+  def disconnect = socket.disconnect
+  def reconnect = disconnect; connect
 }
 
-object MPD {
-  def apply(host: String, port: Int) = new MPD(host, port)
+case class SmartMPD(host: String, port: Int) {
+  private[this] val mpd = MPD(host, port)
+  private[this] var queue: List[Command] = Nil
+
+  def send(q: Command) = {
+    mpd.send(q)
+    queue :+ q
+  }
+
+  def response(attemptNumber: Int = 3): Response = {
+    if (queue.head == Nil) ExternalErrorResponse()
+
+    val query = queue.head
+    queue = queue.tail
+
+    mpd.response(query) match {
+      case x: ConnectionErrorResponse => {
+        if (attemptNumber == 0) x
+        var newQueue: List[Command] = Nil
+        queue.reverse foreach (newQueue ::= _)
+        newQueue ::= query
+
+        queue = Nil
+        newQueue foreach send
+        response(attemptNumber - 1)
+      }
+
+      case x: Response => x
+    }
+  }
+
+  def connect = mpd.connect
+  def disconnect = mpd.disconnect
+  def reconnect = mpd.reconnect
 }
