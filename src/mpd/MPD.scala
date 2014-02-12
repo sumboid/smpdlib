@@ -15,8 +15,8 @@ package mpdlow {
   case object ExternalError extends LowLevelResponse[Nothing]
   case object InternalError extends LowLevelResponse[Nothing]
   case object ConnectionError extends LowLevelResponse[Nothing]
-  case object UnknownHostError extends ConnectionError
-  case object IOError extends ConnectionError
+  case object UnknownHostError extends LowLevelResponse[Nothing]
+  case object IOError extends LowLevelResponse[Nothing]
 
   case class MPDSocket(host: String, port: Int) {
     var socket: Socket = null
@@ -28,7 +28,7 @@ package mpdlow {
       output.flush
     }
 
-    def recv = {
+    def recv: LowLevelResponse[List[String]] = {
       var lines = List[String]()
       while(true) {
         var line: String = input.readLine
@@ -37,10 +37,10 @@ package mpdlow {
         line.split(" ", 2) match {
           case Array("OK") => return Ok(lines)
           case Array("OK", message) => message.split(" ", 2) match {
-            case Array("MPD", vesrion) => return MPDVersion(version)
+            case Array("MPD", version) => return MPDVersion(version :: Nil)
             case _ => return Ok(lines)
           }
-          case Array("ACK", message) => return Ack(message)
+          case Array("ACK", message) => return Ack(message :: Nil)
           case _ => lines ::= line
         }
       }
@@ -69,7 +69,7 @@ package mpdlow {
       }
 
       recv match {
-        case x: MPDVersion => x
+        case x:MPDVersion[List[String]] => x
         case _             => InternalError
       }
     }
@@ -85,19 +85,18 @@ case class MPD(host: String, port: Int) {
   var version = ""
 
   def send(q: Command) = {
-    checkConnectionState
     socket.send(q.raw)
   }
 
   def response(q: Command) = socket.recv match {
     case Ok(x) => q.response.parse(x)
-    case Ack(x) => ErrorResponse(x)
+    case Ack(x) => ErrorResponse(x(0))
     case ConnectionError => ConnectionErrorResponse()
     case _ => UnknownResponse()
   }
 
   def connect = socket.connect match {
-    case MPDVersion(x) => version = x
+    case MPDVersion(x) => version = x(0)
     case _ => ConnectionError
   }
 
