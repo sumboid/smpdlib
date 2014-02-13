@@ -57,7 +57,6 @@ case class MPDSocket(host: String, port: Int) {
   }
 
   def connect = {
-    println("FUCK YOU!")
     try {
       socket = new Socket(InetAddress.getByName(host), port)
       input  = new BufferedReader(new InputStreamReader(socket.getInputStream))
