@@ -17,7 +17,8 @@ case class SmartMPD(host: String, port: Int) {
 
     mpd.response(query) match {
       case x: ConnectionErrorResponse => {
-        if (attemptNumber == 0) x
+        if (attemptNumber == 0) return x
+        reconnect
         var newQueue: List[Command] = Nil
         queue.reverse foreach (newQueue ::= _)
         newQueue ::= query
