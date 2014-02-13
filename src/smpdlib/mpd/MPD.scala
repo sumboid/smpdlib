@@ -21,5 +21,5 @@ case class MPD(host: String, port: Int) {
   }
 
   def disconnect = socket.disconnect
-  def reconnect = disconnect; connect
+  def reconnect = { disconnect; connect }
 }

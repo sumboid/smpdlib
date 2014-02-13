@@ -4,6 +4,8 @@ case class SmartMPD(host: String, port: Int) {
   private[this] val mpd = MPD(host, port)
   private[this] var queue: List[Command] = Nil
 
+  connect
+  
   def send(q: Command) = {
     mpd.send(q)
     queue = queue :+ q

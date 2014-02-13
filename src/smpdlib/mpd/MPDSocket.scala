@@ -29,7 +29,8 @@ case class MPDSocket(host: String, port: Int) {
   def recv: LowLevelResponse[List[String]] = {
     var lines = List[String]()
     while(true) {
-      var line: String = input.readLine
+      var line: String = "" 
+      try { line = input.readLine } catch { case _: Throwable => return ConnectionError }
       if(line == null) { return ConnectionError }
 
       line.split(" ", 2) match {
@@ -56,6 +57,7 @@ case class MPDSocket(host: String, port: Int) {
   }
 
   def connect = {
+    println("FUCK YOU!")
     try {
       socket = new Socket(InetAddress.getByName(host), port)
       input  = new BufferedReader(new InputStreamReader(socket.getInputStream))
@@ -72,5 +74,5 @@ case class MPDSocket(host: String, port: Int) {
     }
   }
 
-  def reconnect = disconnect; connect
+  def reconnect = { disconnect; connect }
 }
