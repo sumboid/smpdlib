@@ -1,7 +1,9 @@
 package smpd
 
 package sub {
-  abstract class Subsystem(name: String = "")
+  abstract class Subsystem(name: String = "") {
+    override def toString = name
+  }
   case class Database extends Subsystem("database")
   case class Update extends Subsystem("update")
   case class StoredPlaylist extends Subsystem("stored_playlist")
