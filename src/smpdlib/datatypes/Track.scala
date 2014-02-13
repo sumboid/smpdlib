@@ -11,7 +11,14 @@ case class Track(id:     Int,
                  file:   String)
 
 object Track {
+  def specialToInt(number: String) = try {
+    number.toInt
+  } catch {
+    case _: Throwable => -1
+  }
+
   def create(raw: List[String]) = {
+
     var id = -1
     var pos = -1
     var track = -1 -> -1
@@ -26,17 +33,17 @@ object Track {
       val sline = line.split(": ", 2)
       val (keyword, value): (String, String) = (sline(0), sline(1))
       keyword match {
-        case "Id" => id = value.toInt
-        case "Pos" => pos = value.toInt
+        case "Id" => id = specialToInt(value)
+        case "Pos" => pos = specialToInt(value)
         case "Track" => value.split("/", 2) match {
-          case Array(x) => track = x.toInt -> -1
-          case Array(x, y) => track = x.toInt -> y.toInt
+          case Array(x) => track = specialToInt(x) -> -1
+          case Array(x, y) => track = specialToInt(x) -> specialToInt(y)
           case _ => {}
         }
         case "Artist" => artist = value
         case "Title" => title = value
         case "Album" => album = value
-        case "Time" => time = value.toInt
+        case "Time" => time = specialToInt(value)
         case "file" => file = value
         case _ => {}
       }
