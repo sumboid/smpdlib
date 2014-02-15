@@ -5,7 +5,7 @@ case class SmartMPD(host: String, port: Int) {
   private[this] var queue: List[Command] = Nil
 
   connect
-  
+
   def send(q: Command) = {
     mpd.send(q)
     queue = queue :+ q
@@ -32,6 +32,19 @@ case class SmartMPD(host: String, port: Int) {
 
       case x: Response => x
     }
+  }
+
+  def wresponse(cer: => Unit = {},
+                eer: => Unit = {},
+                er: => Unit = {},
+                ur: => Unit = {},
+                r: => Unit = {},
+                attemptNumber: Int = 3): Unit = response() match {
+    case x: ConnectionErrorResponse => cer
+    case x: ExternalErrorResponse => eer
+    case x: ErrorResponse => er
+    case x: UnknownResponse => ur
+    case x: Response => r
   }
 
   def connect = mpd.connect
