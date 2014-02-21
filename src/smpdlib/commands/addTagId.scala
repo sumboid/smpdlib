@@ -1,7 +1,7 @@
 package smpd
 
 case class AddTagId(id: Int, tag: String, value: String) extends Command {
-  val command = "add"
+  val command = "addtagid"
   def raw = command :: id :: tag :: value :: Nil mkString (" ")
 
   def response = AddTagIdResponse()
